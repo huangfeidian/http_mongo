@@ -1,6 +1,6 @@
 ﻿#include <db_task.h>
 #include <bsoncxx/json.hpp>
-using namespace spiritsaway::http_mongo;
+using namespace spiritsaway::http_mongo::server;
 using json = nlohmann::json;
 db_task::db_task(std::shared_ptr<const task_desc::base_task> in_task_desc,
 	std::weak_ptr<task_desc::reply_callback_t> in_callback, logger_t in_logger)
@@ -32,52 +32,11 @@ mongocxx::read_preference::read_mode db_task::read_mode(task_desc::read_prefer_m
 	}
 }
 
-bool db_task::should_reconnect() const
-{
-	const auto& error = _reply.error;
-	if (error.find("socket error or timeout") != std::string::npos)
-	{
-		return true;
-	}
-	if (error.find("connection refused calling ismaster") != std::string::npos)
-	{
-		return true;
-	}
-	return false;
-}
-bool db_task::should_retry() const
-{
-	const static std::vector<std::string> retry_errors = {
-		"no master found",
-		"error querying server",
-		"transport error",
-		"could not contact primary",
-		"write results unavailable",
-		"could not enforce write concern",
-		"not master",
-		"interrupted at shutdown",
-		"No suitable servers found",
-		"could not find host matching read preference",
-		"unable to target",
-		"waiting for replication timed out",
-		"can't connect to new replica set master",
-		"socket exception",
-		"Couldn't get a connection within the time limit",
-		"Operation timed out",
-	};
-	const auto& error = _reply.error;
-	for (const auto& one_err : retry_errors)
-	{
-		if (error.find(one_err) != std::string::npos)
-		{
-			return true;
-		}
-	}
-	return false;
-}
 
-void db_task::finish()
+
+void db_task::finish(const std::string& error)
 {
+	_reply.error = error;
 	auto cur_callback = _callback.lock();
 	_callback.reset();
 	if (!cur_callback)
@@ -87,6 +46,10 @@ void db_task::finish()
 	cur_callback->operator()(_reply);
 }
 
+const std::string& db_task::channel_id() const
+{
+	return _task_desc->channel;
+}
 void db_task::run(mongocxx::database& db)
 {
 	run_begin_time = std::chrono::steady_clock::now();
@@ -110,67 +73,43 @@ void db_task::run(mongocxx::database& db)
 }
 bool db_task::run_impl(mongocxx::database& db)
 {
-	try {
-		switch (_task_desc->op_type)
-		{
-		case task_desc::task_op::find_one:
-		case task_desc::task_op::find_multi:
-		{
-			run_find_task(db);
-			break;
-		}
-		case task_desc::task_op::count:
-		{
-			run_count_task(db);
-			break;
-		}
-		case task_desc::task_op::update_one:
-		case task_desc::task_op::update_multi:
-		{
-			run_update_task(db);
-			break;
-		}
-		case task_desc::task_op::delete_one:
-		case task_desc::task_op::delete_multi:
-		{
-			run_delete_task(db);
-			break;
-		}
-		case task_desc::task_op::find_and_modify:
-		{
-			run_find_and_modify_task(db);
-			break;
-		}
-
-		default:
-			_reply.error = "invalid op_type";
-			logger->error("invalid op_type for task {}", _task_desc->debug_info());
-			break;
-		}
-		return true;
-	}
-	catch (const std::exception& e)
+	switch (_task_desc->op_type)
 	{
-		_reply.error = e.what();
-		if (should_reconnect())
-		{
-			logger->error("db error: {} reconnect for task {} ", _reply.error, _task_desc->debug_info());
-
-			_reply.error.clear();
-			return false;
-		}
-		if (should_retry())
-		{
-			logger->error("db error: {} retry task {}", _reply.error, _task_desc->debug_info());
-
-			cur_retry_time = std::min(retry_max_fold, cur_retry_time * 2);
-			std::this_thread::sleep_for(std::chrono::milliseconds(cur_retry_time * retry_base_milliseconds));
-			_reply.error.clear();
-			return false;
-		}
-		logger->error("cant recover from error {} fail task {}", _reply.error, _task_desc->debug_info());
-		return true;
+	case task_desc::task_op::find_one:
+	case task_desc::task_op::find_multi:
+	{
+		run_find_task(db);
+		break;
 	}
+	case task_desc::task_op::count:
+	{
+		run_count_task(db);
+		break;
+	}
+	case task_desc::task_op::update_one:
+	case task_desc::task_op::update_multi:
+	{
+		run_update_task(db);
+		break;
+	}
+	case task_desc::task_op::delete_one:
+	case task_desc::task_op::delete_multi:
+	{
+		run_delete_task(db);
+		break;
+	}
+	case task_desc::task_op::find_and_modify:
+	{
+		run_find_and_modify_task(db);
+		break;
+	}
+
+	default:
+		_reply.error = "invalid op_type";
+		logger->error("invalid op_type for task {}", _task_desc->debug_info());
+		break;
+	}
+
 }
 void db_task::run_find_task(mongocxx::database& db)
 {

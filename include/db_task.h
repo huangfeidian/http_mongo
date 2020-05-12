@@ -5,7 +5,7 @@
 #include <spdlog/logger.h>
 #include <mongocxx/database.hpp>
 
-namespace spiritsaway::http_mongo
+namespace spiritsaway::http_mongo::server
 {
 	using cost_time_t = std::chrono::time_point<std::chrono::steady_clock>;
 	using logger_t = std::shared_ptr<spdlog::logger>;
@@ -17,25 +17,27 @@ namespace spiritsaway::http_mongo
 		const cost_time_t begin_time;
 		cost_time_t run_begin_time;
 		cost_time_t run_end_time;
+		
 		logger_t logger;
-		std::uint32_t retry_base_milliseconds = 100;
-		std::uint32_t retry_max_fold = 16;
-		std::uint32_t cur_retry_time = 1;
+
 	public:
+		using channel_type = std::string;
+		using callback_t = task_desc::reply_callback_t;
+		const std::string& channel_id() const;
+		std::shared_ptr<const task_desc::base_task> task_desc() const;
 		db_task(std::shared_ptr<const task_desc::base_task> in_task_desc,
 			std::weak_ptr<task_desc::reply_callback_t> in_callback, logger_t in_logger);
 		db_task(const db_task& other) = delete;
 		void run(mongocxx::database& db);
 		mongocxx::read_preference::read_mode read_mode(task_desc::read_prefer_mode in_read_mode) const;
-		void finish();
+		void finish(const std::string& error);
 	protected:
 		void run_find_task(mongocxx::database& db);
 		void run_count_task(mongocxx::database& db);
 		void run_update_task(mongocxx::database& db);
 		void run_find_and_modify_task(mongocxx::database& db);
 		void run_delete_task(mongocxx::database& db);
-		bool should_reconnect() const;
-		bool should_retry() const;
+
 		bool run_impl(mongocxx::database& db);
 
 	};
