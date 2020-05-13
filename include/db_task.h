@@ -35,10 +35,10 @@ namespace spiritsaway::http_mongo::server
 		void run_find_task(mongocxx::database& db);
 		void run_count_task(mongocxx::database& db);
 		void run_update_task(mongocxx::database& db);
-		void run_find_and_modify_task(mongocxx::database& db);
+		void run_modify_task(mongocxx::database& db);
 		void run_delete_task(mongocxx::database& db);
 
-		bool run_impl(mongocxx::database& db);
+		void run_impl(mongocxx::database& db);
 
 	};
 }

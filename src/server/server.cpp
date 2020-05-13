@@ -44,7 +44,7 @@ std::string mongo_session::check_request()
 	{
 		return "cant get base task from request";
 	}
-	switch (cur_base.op_type)
+	switch (cur_base.op_type())
 	{
 	case task_desc::task_op::invalid:
 		return "invalid task op";
@@ -91,9 +91,10 @@ std::string mongo_session::check_request()
 		cur_task = cur_count_task;
 		return "";
 	}
-	case task_desc::task_op::find_and_modify:
+	case task_desc::task_op::modify_update:
+	case task_desc::task_op::modify_delete:
 	{
-		auto cur_modify_task = std::make_shared<task_desc::find_and_modify_task>(cur_base);
+		auto cur_modify_task = std::make_shared<task_desc::modify_task>(cur_base);
 		if (!cur_modify_task->from_json(json_body))
 		{
 			return "cant construct modify_task from request";
@@ -117,7 +118,7 @@ void mongo_session::route_request()
 		return self->finish_task(reply);
 	};
 	callback = std::make_shared<db_task::callback_t>(cur_task_lambda);
-	auto cur_db_task = std::make_shared<db_task>(cur_task, callback);
+	auto cur_db_task = std::make_shared<db_task>(cur_task, callback, logger);
 	beast::get_lowest_layer(stream_).expires_after(
 		std::chrono::seconds(expire_time));
 	expire_timer = std::make_shared<boost::asio::steady_timer>(stream_.get_executor(), std::chrono::seconds(expire_time / 2));

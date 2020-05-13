@@ -19,7 +19,8 @@ namespace spiritsaway::http_mongo::task_desc
 		update_multi,
 		delete_one,
 		delete_multi,
-		find_and_modify,
+		modify_update,
+		modify_delete
 	};
 	enum class read_prefer_mode
 	{
@@ -59,9 +60,9 @@ namespace spiritsaway::http_mongo::task_desc
 	public:
 		std::uint32_t limit = 1;
 		std::uint32_t skip = 0;
-		std::unordered_map<std::string, bool> hint;
-		std::unordered_map<std::string, bool> sort;
-		std::unordered_map<std::string, bool> fields;
+		std::string hint;
+		std::string sort;
+		std::string fields;
 
 
 		read_prefer_mode read_prefer = read_prefer_mode::secondary;
@@ -73,17 +74,35 @@ namespace spiritsaway::http_mongo::task_desc
 	{
 	protected:
 		find_option _option;
-		json::object_t _query;
+		std::string _query;
 	public:
 		find_task(const base_task& base,
-			find_option in_option,
-			json::object_t in_query,
-			std::unordered_map<std::string, bool> in_fields);
+			const find_option& in_option,
+			const std::string& in_query,
+			const std::string& in_fields);
 		find_task(const base_task& base);
 		const find_option& option() const;
-		const json::object_t& query() const;
+		const std::string& query() const;
 		json to_json() const;
 		bool from_json(const json& data);
+		static std::shared_ptr<find_task> find_one(
+			const base_task& base, 
+			const json::object_t& query,
+			std::unordered_map<std::string, bool>  fields = {},
+			read_prefer_mode read_prefer = read_prefer_mode::secondary,
+			std::unordered_map<std::string, bool> sort = {},
+			std::unordered_map<std::string, bool>  hint = {}
+		);
+		static std::shared_ptr<find_task> find_multi(
+			const base_task& base,
+			const json::object_t& query,
+			std::uint32_t limit,
+			std::unordered_map<std::string, bool>  fields = {},
+			std::uint32_t skip = 0,
+			read_prefer_mode read_prefer = read_prefer_mode::secondary,
+			std::unordered_map<std::string, bool> sort = {},
+			std::unordered_map<std::string, bool>  hint = {}
+		);
 
 	};
 
@@ -91,17 +110,23 @@ namespace spiritsaway::http_mongo::task_desc
 	{
 		protected:
 		find_option _option;
-		json::object_t _query;
+		std::string _query;
 	public:
 		count_task(const base_task& base,
-			find_option in_option,
-			json::object_t in_query,
-			std::unordered_map<std::string, bool> in_fields);
+			const find_option& in_option,
+			const std::string& in_query,
+			const std::string& in_fields);
 		count_task(const base_task& base);
 		const find_option& option() const;
-		const json::object_t& query() const;
+		const std::string& query() const;
 		json to_json() const;
 		bool from_json(const json& data);
+		static std::shared_ptr<count_task> count(
+			const base_task& base,
+			const json::object_t& query,
+			read_prefer_mode read_prefer = read_prefer_mode::secondary,
+			std::unordered_map<std::string, bool>  hint = {}
+		);
 	};
 
 	class update_task: public base_task
@@ -109,41 +134,53 @@ namespace spiritsaway::http_mongo::task_desc
 	protected:
 		bool _multi = false;
 		bool _upset = false;
-		json::object_t _doc;
-		json::object_t _query;
+		std::string _doc;
+		std::string _query;
 
 	public:
 		json to_json() const;
 		bool from_json(const json& data);
 
 		update_task(const base_task& in_base,
-			const json::object_t& in_doc,
+			const std::string& in_doc,
 			bool in_multi,
 			bool in_upset);
 		bool is_multi() const;
 		bool is_upset() const;
-		const json::object_t& doc() const;
-		const json::object_t& query() const;
+		const std::string& doc() const;
+		const std::string& query() const;
 		update_task(const base_task& in_base);
+		static std::shared_ptr<update_task> update_one(
+			const base_task& base,
+			const json::object_t& query,
+			const json::object_t& doc,
+			bool upset
+		);
+		static std::shared_ptr<update_task> update_multi(
+			const base_task& base,
+			const json::object_t& query,
+			const json::object_t& doc
+		);
 	};
 
-	class find_and_modify_task: public base_task
+	class modify_task: public base_task
 	{
 	protected:
 		bool _upset = false;
-		json::object_t _doc;
+		std::string _doc;
 		bool _remove = false;
-		json::object_t _query;
+		std::string _query;
 		bool _return_new = false;
+		find_option _option;
 
 
 	public:
 		json to_json() const;
 		bool from_json(const json& data);
 
-		find_and_modify_task(const base_task& in_base,
-			const json::object_t& in_doc,
-			const json::object_t& in_query,
+		modify_task(const base_task& in_base,
+			const std::string& in_doc,
+			const std::string& in_query,
 			bool in_remove,
 			bool in_upset,
 			bool in_return_new);
@@ -151,26 +188,49 @@ namespace spiritsaway::http_mongo::task_desc
 		bool is_upset() const;
 		bool is_return_new() const;
 		const find_option& option() const;
-		const json::object_t& query() const;
+		const std::string& query() const;
 
-		const json::object_t& doc() const;
-		find_and_modify_task(const base_task& in_base);
+		const std::string& doc() const;
+		modify_task(const base_task& in_base);
+		static std::shared_ptr<modify_task> modify_one(
+			const base_task& base,
+			const json::object_t& query,
+			const json::object_t& doc,
+			bool upset,
+			bool return_new,
+			std::unordered_map<std::string, bool>  fields = {},
+			std::unordered_map<std::string, bool> sort = {}
+		);
+		static std::shared_ptr<modify_task> delete_one(
+			const base_task& base,
+			const json::object_t& query,
+			std::unordered_map<std::string, bool>  fields = {},
+			std::unordered_map<std::string, bool> sort = {}
+		);
 	};
 
 	class delete_task: public base_task
 	{
 	protected:
-		json::object_t _query;
+		std::string _query;
 		bool _limit_one = true;//false for delete many
 	public:
 		json to_json() const;
 		bool from_json(const json& data);
 		delete_task(const base_task& in_base,
-			const json::object_t& in_query,
+			const std::string& in_query,
 			bool in_only_one);
 		bool is_limit_one() const;
-		const json::object_t& query() const;
+		const std::string& query() const;
 		delete_task(const base_task& in_base);
+		static std::shared_ptr<delete_task> delete_one(
+			const base_task& base,
+			const json::object_t& query
+		);
+		static std::shared_ptr<delete_task> delete_multi(
+			const base_task& base,
+			const json::object_t& query
+		);
 	};
 	class task_reply
 	{
