@@ -4,7 +4,7 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/fmt/ostr.h>
 using namespace spiritsaway::http_mongo::server;
-using namespace http_utils;
+using namespace spiritsaway::http_utils;
 
 
 

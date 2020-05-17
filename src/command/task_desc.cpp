@@ -471,7 +471,7 @@ std::string count_task::from_json(const json& data)
 	{
 		return "cant find key query";
 	}
-	if (str_or_object(query_iter, _query))
+	if (!str_or_object(query_iter, _query))
 	{
 		return "value for query is not object";
 	}
@@ -720,11 +720,14 @@ std::string modify_task::to_bson(const std::function<bool(std::string&)>& bson_f
 	{
 		return base_error;
 	}
-
-	if (!bson_func(_doc))
+	if (op_type() == task_op::modify_update)
 	{
-		return "doc";
+		if (!bson_func(_doc))
+		{
+			return "doc";
+		}
 	}
+	
 	if (!bson_func(_query))
 	{
 		return "query";
