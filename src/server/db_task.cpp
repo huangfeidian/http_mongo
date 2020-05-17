@@ -10,7 +10,6 @@ db_task::db_task(std::shared_ptr<const task_desc::base_task> in_task_desc,
 	, logger(std::move(in_logger))
 	, begin_time(std::chrono::steady_clock::now())
 {
-
 }
 
 mongocxx::read_preference::read_mode db_task::read_mode(task_desc::read_prefer_mode in_read_mode)const
@@ -34,6 +33,10 @@ mongocxx::read_preference::read_mode db_task::read_mode(task_desc::read_prefer_m
 }
 
 
+std::shared_ptr<const task_desc::base_task> db_task::task_desc() const
+{
+	return _task_desc;
+}
 
 void db_task::finish(const std::string& error)
 {
@@ -62,6 +65,7 @@ void db_task::run(mongocxx::database& db)
 	{
 		logger->warn("db task: {} run cost {} ms", _task_desc->debug_info(), milliseconds_cost);
 	}
+	_reply.cost = milliseconds_cost;
 	
 }
 void db_task::run_impl(mongocxx::database& db)
@@ -143,6 +147,7 @@ void db_task::run_find_task(mongocxx::database& db)
 	{
 		_reply.content.push_back(bsoncxx::to_json(one_doc));
 	}
+	_reply.count = _reply.content.size();
 }
 
 void db_task::run_count_task(mongocxx::database& db)
@@ -216,17 +221,25 @@ void db_task::run_update_task(mongocxx::database& db)
 	if(cur_update_task->is_multi())
 	{
 		cur_update_result = db[cur_update_task->collection()].update_many(query_view, doc_view, opt);
-
 	}
 	else
 	{
 		cur_update_result = db[cur_update_task->collection()].update_one(query_view, doc_view, opt);
-
+		
 	}
 	if (cur_update_result)
 	{
+		
 		const auto& real_result = cur_update_result.value();
+
 		_reply.count = real_result.modified_count();
+		const auto& upset_id = real_result.upserted_id();
+		if (_reply.count == 0 && upset_id)
+		{
+			_reply.count = 1;
+		}
+		
+
 	}
 
 }
@@ -262,6 +275,7 @@ void db_task::run_modify_task(mongocxx::database& db)
 		if (cur_result)
 		{
 			_reply.content.push_back(bsoncxx::to_json(cur_result.value()));
+			_reply.count = 1;
 		}
 
 
@@ -296,6 +310,7 @@ void db_task::run_modify_task(mongocxx::database& db)
 		if (cur_result)
 		{
 			_reply.content.push_back(bsoncxx::to_json(cur_result.value()));
+			_reply.count = 1;
 		}
 
 	}

@@ -10,6 +10,7 @@ worker::worker(const mongo_config& config,
 	: _config(config)
 	, _task_source(task_source)
 	, logger(in_logger)
+
 {
 
 }
@@ -19,24 +20,26 @@ bool worker::connect()
 	_db.reset();
 	_client.reset();
 	std::string uri_str;
-	if (_config.user.empty())
-	{
-		uri_str = fmt::format("mongodb://{}:{}", _config.host, _config.port);
-	}
-	else
-	{
-		uri_str = fmt::format("mongodb://{}:{}@{}:{}", _config.user, _config.passwd, _config.host, _config.port);
-	}
-	mongocxx::uri uri(uri_str);
+
 	try
 	{
+		if (_config.user.empty())
+		{
+			uri_str = fmt::format("mongodb://{}:{}/{}", _config.host, _config.port, _config.dbname);
+		}
+		else
+		{
+			uri_str = fmt::format("mongodb://{}:{}@{}:{}/?authSource={}", _config.user, _config.passwd, _config.host, _config.port, _config.dbname);
+		}
+		mongocxx::uri uri(uri_str);
+
 		_client = std::make_shared<mongocxx::client>(uri);
 		_db = std::make_shared<mongocxx::database>(_client->database(_config.dbname));
 		return true;
 	}
 	catch (std::exception& e)
 	{
-		logger->error("failt to make client for {}", uri_str);
+		logger->error("failt to make client for {} error is {}", uri_str, e.what());
 		return false;
 	}
 

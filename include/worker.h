@@ -33,7 +33,6 @@ namespace spiritsaway::http_mongo::server
 		db_task::channel_type pre_channel;
 		std::uint32_t worker_id = 0;
 
-		mongocxx::instance instance;
 		std::shared_ptr<mongocxx::client> _client;
 		std::shared_ptr<mongocxx::database> _db;
 

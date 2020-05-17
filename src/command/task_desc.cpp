@@ -51,61 +51,61 @@ base_task::base_task()
 {
 
 }
-bool base_task::from_json(const json& data)
+std::string base_task::from_json(const json& data)
 {
-	if(!data)
+	if(!data.is_object())
 	{
-		return false;
+		return "data is not object";
 	}
 	auto col_iter = data.find("collection");
 	if(col_iter == data.end())
 	{
-		return false;
+		return "cant find key collection";
 		
 	}
 	if(!col_iter->is_string())
 	{
-		return false;
+		return "value for collection is not str";
 	}
 	_collection = (*col_iter).get<std::string>();
 
 	auto channel_iter = data.find("channel");
 	if(channel_iter == data.end())
 	{
-		return false;
+		return "cant find key channel";
 		
 	}
 	if(!channel_iter->is_string())
 	{
-		return false;
+		return "value for channel is not string";
 	}
 	_channel = (*channel_iter).get<std::string>();
 
 	auto request_iter = data.find("request_id");
 	if(request_iter == data.end())
 	{
-		return false;
+		return "cant find key request_id";
 	}
 	if(!request_iter->is_string())
 	{
-		return false;
+		return "value for request_id is not str";
 	}
 	_request_id = (*request_iter).get<std::string>();
 	auto op_type_iter = data.find("op_type");
 	if(op_type_iter == data.end())
 	{
-		return false;
+		return "cant fint key op_type";
 		
 	}
 	if(!op_type_iter->is_string())
 	{
-		return false;
+		return "value for key op_type is not string";
 	}
 	auto cur_type_str = (*op_type_iter).get<std::string>();
 	auto opt_type = magic_enum::enum_cast<task_op>(cur_type_str);
 	if(!opt_type)
 	{
-		return false;
+		return "value for key op_type is not valid task_op";
 	}
 	_op_type = opt_type.value();
 	auto extra_iter = data.find("extra");
@@ -113,20 +113,56 @@ bool base_task::from_json(const json& data)
 	{
 		if(!extra_iter->is_object())
 		{
-			return false;
+			return "value for extra is not object";
 		}
 		extra = (*extra_iter).get<json::object_t>();
 	}
-	return true;
+	return "";
 }
 
+std::string base_task::to_bson(const std::function<bool(std::string&)>& bson_func)
+{
+	return "";
+}
+
+bool base_task::str_or_object(json::const_iterator& iter, std::string& dest)
+{
+	if (iter->is_string())
+	{
+		dest = (*iter).get<std::string>();
+		return true;
+	}
+	if (iter->is_object())
+	{
+		dest = (*iter).dump();
+		return true;
+	}
+	return false;
+
+}
+std::string base_task::convert_bool_map_to_str(const std::unordered_map<std::string, bool>& data)
+{
+	std::unordered_map<std::string, int> result;
+	for (auto& [k, v] : data)
+	{
+		if (v)
+		{
+			result[k] = 1;
+		}
+		else
+		{
+			result[k] = -1;
+		}
+	}
+	return json(result).dump();
+}
 std::string base_task::debug_info() const
 {
 	return base_task::to_json().dump();
 }
 json find_option::to_json() const
 {
-	json result;
+	json::object_t result;
 	if(limit)
 	{
 		result["limit"] = limit;
@@ -154,18 +190,18 @@ json find_option::to_json() const
 
 	return result;
 }
-bool find_option::from_json(const json& data)
+std::string find_option::from_json(const json& data)
 {
-	if(!data)
+	if(!data.is_object())
 	{
-		return true;
+		return "data is not object";
 	}
 	auto limit_iter = data.find("limit");
 	if(limit_iter != data.end())
 	{
 		if(!limit_iter->is_number_unsigned())
 		{
-			return false;
+			return "value for limit is not unsigned";
 		}
 		limit = (*limit_iter).get<std::uint32_t>();
 	}
@@ -174,7 +210,7 @@ bool find_option::from_json(const json& data)
 	{
 		if(!skip_iter->is_number_unsigned())
 		{
-			return false;
+			return "value for skip is not unsigned";
 		}
 		skip = (*skip_iter).get<std::uint32_t>();
 	}
@@ -183,30 +219,27 @@ bool find_option::from_json(const json& data)
 	auto hint_iter = data.find("hint");
 	if(hint_iter != data.end())
 	{
-		if(!hint_iter->is_string())
+		if (!base_task::str_or_object(hint_iter, hint))
 		{
-			return false;
+			return "value for hint is not valid object";
 		}
-		hint = (*hint_iter).get<std::string>();
 	}
 	auto sort_iter = data.find("sort");
 	if(sort_iter != data.end())
 	{
-		if (!sort_iter->is_string())
+		if (!base_task::str_or_object(sort_iter, sort))
 		{
-			return false;
+			return "value for sort is not valid object";
 		}
-		sort = (*sort_iter).get<std::string>();
 	}
 
 	auto fields_iter = data.find("fields");
 	if(fields_iter != data.end())
 	{
-		if (!fields_iter->is_string())
+		if (!base_task::str_or_object(fields_iter, fields))
 		{
-			return false;
+			return "value for fields is not valid object";
 		}
-		fields = (*fields_iter).get<std::string>();
 	}
 
 	auto read_pref_iter = data.find("read_pref");
@@ -214,17 +247,43 @@ bool find_option::from_json(const json& data)
 	{
 		if(!read_pref_iter->is_string())
 		{
-			return false;
+			return "value for read_pref is not string";
 		}
 		auto cur_read_str = (*read_pref_iter).get<std::string>();
 		auto opt_pref = magic_enum::enum_cast<read_prefer_mode>(cur_read_str);
 		if(!opt_pref)
 		{
-			return false;
+			return "value for read_pref is not valid read_prefer_mode";
 		}
 		read_prefer = opt_pref.value();
 	}
-	return true;
+	return "";
+}
+
+std::string find_option::to_bson(const std::function<bool(std::string&)>& bson_func)
+{
+	if (!fields.empty())
+	{
+		if (!bson_func(fields))
+		{
+			return "fields";
+		}
+	}
+	if (!sort.empty())
+	{
+		if (!bson_func(sort))
+		{
+			return "sort";
+		}
+	}
+	if (!hint.empty())
+	{
+		if (!bson_func(hint))
+		{
+			return "hint";
+		}
+	}
+	return "";
 }
 
 
@@ -250,23 +309,53 @@ json find_task::to_json() const
 	result["query"] = _query;
 	return result;
 }
-bool find_task::from_json(const json& data)
+std::string find_task::from_json(const json& data)
 {
-	if(!_option.from_json(data["find_option"]))
+	if (!data.is_object())
 	{
-		return false;
+		return "data is not object";
 	}
+	auto option_iter = data.find("find_option");
+	if (option_iter == data.end())
+	{
+		return "cant find key find_option";
+	}
+	auto option_error = _option.from_json(*option_iter);
+	if (!option_error.empty())
+	{
+		return "value for option is not valid, detail is: " + option_error;
+	}
+	
 	auto query_iter = data.find("query");
 	if(query_iter == data.end())
 	{
-		return false;
+		return "cant find key query";
 	}
-	if(!query_iter->is_string())
+	if (!str_or_object(query_iter, _query))
 	{
-		return false;
+		return "value for query is not object";
 	}
-	_query = (*query_iter).get<std::string>();
-	return true;
+	return "";
+}
+
+std::string find_task::to_bson(const std::function<bool(std::string&)>& bson_func)
+{
+	auto base_error = base_task::to_bson(bson_func);
+
+	if (!base_error.empty())
+	{
+		return base_error;
+	}
+	auto option_error = _option.to_bson(bson_func);
+	if(!option_error.empty())
+	{
+		return "option:" + option_error;
+	}
+	if (!bson_func(_query))
+	{
+		return "query";
+	}
+	return "";
 }
 
 const find_option& find_task::option() const
@@ -291,15 +380,15 @@ std::shared_ptr<find_task> find_task::find_one(
 	result->_query = json(query).dump();
 	if (!fields.empty())
 	{
-		result->_option.fields = json(fields).dump();
+		result->_option.fields = convert_bool_map_to_str(fields);
 	}
 	if (!sort.empty())
 	{
-		result->_option.fields = json(sort).dump();
+		result->_option.fields = convert_bool_map_to_str(sort);
 	}
 	if (!hint.empty())
 	{
-		result->_option.fields = json(hint).dump();
+		result->_option.fields = convert_bool_map_to_str(hint);
 	}
 	result->_option.read_prefer = read_prefer;
 	result->_op_type = task_op::find_one;
@@ -323,15 +412,15 @@ std::shared_ptr<find_task> find_task::find_multi(
 	result->_query = json(query).dump();
 	if (!fields.empty())
 	{
-		result->_option.fields = json(fields).dump();
+		result->_option.fields = convert_bool_map_to_str(fields);
 	}
 	if (!sort.empty())
 	{
-		result->_option.fields = json(sort).dump();
+		result->_option.sort = convert_bool_map_to_str(sort);
 	}
 	if (!hint.empty())
 	{
-		result->_option.fields = json(hint).dump();
+		result->_option.hint = convert_bool_map_to_str(hint);
 	}
 	result->_option.read_prefer = read_prefer;
 	result->_op_type = task_op::find_multi;
@@ -361,23 +450,52 @@ json count_task::to_json() const
 	result["query"] = _query;
 	return result;
 }
-bool count_task::from_json(const json& data)
+std::string count_task::from_json(const json& data)
 {
-	if(!_option.from_json(data["find_option"]))
+	if (!data.is_object())
 	{
-		return false;
+		return "data is not object";
+	}
+	auto option_iter = data.find("find_option");
+	if (option_iter == data.end())
+	{
+		return "cant find key find_option";
+	}
+	auto option_error = _option.from_json(*option_iter);
+	if (!option_error.empty())
+	{
+		return "value for option is not valid, detail is: " + option_error;
 	}
 	auto query_iter = data.find("query");
 	if(query_iter == data.end())
 	{
-		return false;
+		return "cant find key query";
 	}
-	if(!query_iter->is_string())
+	if (str_or_object(query_iter, _query))
 	{
-		return false;
+		return "value for query is not object";
 	}
-	_query = (*query_iter).get<std::string>();
-	return true;
+	return "";
+}
+
+std::string count_task::to_bson(const std::function<bool(std::string&)>& bson_func)
+{
+	auto base_error = base_task::to_bson(bson_func);
+
+	if (!base_error.empty())
+	{
+		return base_error;
+	}
+	auto option_error = _option.to_bson(bson_func);
+	if (!option_error.empty())
+	{
+		return "option:" + option_error;
+	}
+	if (!bson_func(_query))
+	{
+		return "query";
+	}
+	return "";
 }
 
 const find_option& count_task::option() const
@@ -402,7 +520,7 @@ std::shared_ptr<count_task> count_task::count(
 	result->_option.read_prefer = read_prefer;
 	if (!hint.empty())
 	{
-		result->_option.hint = json(hint).dump();
+		result->_option.hint = convert_bool_map_to_str(hint);
 	}
 	return result;
 }
@@ -416,58 +534,77 @@ json update_task::to_json() const
 	result["query"] = _query;
 	return result;
 }
-bool update_task::from_json(const json& data)
+std::string update_task::from_json(const json& data)
 {
-	if (data.is_object())
+	if (!data.is_object())
 	{
-		return false;
+		return "data is not object";
 	}
 	auto upset_iter = data.find("upset");
 	if(upset_iter == data.end())
 	{
-		return false;
+		return "cant find key upset";
 	}
 	if(!upset_iter->is_boolean())
 	{
-		return false;
+		return "value for key upset is not bool";
 	}
 	_upset = (*upset_iter).get<bool>();
 
 	auto multi_iter = data.find("multi");
 	if(multi_iter == data.end())
 	{
-		return false;
+		return "cant find key multi";
 	}
 	if(!multi_iter->is_boolean())
 	{
-		return false;
+		return "value for key multi is not bool";
 	}
 	_multi = (*multi_iter).get<bool>();
 
 	auto doc_iter = data.find("doc");
 	if(doc_iter == data.end())
 	{
-		return false;
+		return "cant find key doc";
 	}
-	if(!doc_iter->is_string())
+	if (!str_or_object(doc_iter, _doc))
 	{
-		return false;
+		return "value for doc is not valid object";
 	}
-	_doc = (*doc_iter).get<std::string>();
 
 	auto query_iter = data.find("query");
 	if (query_iter == data.end())
 	{
-		return false;
+		return "cant find key query";
 	}
-	if (!query_iter->is_string())
+	if (!str_or_object(query_iter, _query))
 	{
-		return false;
+		return "value for key query is not valid object";
 	}
-	_query = (*query_iter).get<std::string>();
 
-	return true;
+	return "";
 }
+
+std::string update_task::to_bson(const std::function<bool(std::string&)>& bson_func)
+{
+	auto base_error = base_task::to_bson(bson_func);
+
+	if (!base_error.empty())
+	{
+		return base_error;
+	}
+
+	if (!bson_func(_doc))
+	{
+		return "doc";
+	}
+	if (!bson_func(_query))
+	{
+		return "query";
+	}
+	return "";
+}
+
 
 update_task::update_task(const base_task& in_base,
 	const std::string& in_doc,
@@ -515,31 +652,31 @@ json modify_task::to_json() const
 	result["return_new"] = _return_new;
 	return result;
 }
-bool modify_task::from_json(const json& data)
+std::string modify_task::from_json(const json& data)
 {
-	if (data.is_object())
+	if (!data.is_object())
 	{
-		return false;
+		return "data is not object";
 	}
 	auto upset_iter = data.find("upset");
 	if(upset_iter == data.end())
 	{
-		return false;
+		return "cant find key upset";
 	}
 	if(!upset_iter->is_boolean())
 	{
-		return false;
+		return "value for key upset is not bool";
 	}
 	_upset = (*upset_iter).get<bool>();
 
 	auto remove_iter = data.find("remove");
 	if(remove_iter == data.end())
 	{
-		return false;
+		return "cant find key remove";
 	}
 	if(!remove_iter->is_boolean())
 	{
-		return false;
+		return "value for key remove is not bool";
 	}
 	_remove = (*remove_iter).get<bool>();
 
@@ -548,7 +685,7 @@ bool modify_task::from_json(const json& data)
 	{
 		if (!return_new_iter->is_boolean())
 		{
-			return false;
+			return "value for return_new is not bool";
 		}
 		_return_new = (*return_new_iter).get<bool>();
 	}
@@ -557,27 +694,44 @@ bool modify_task::from_json(const json& data)
 	auto doc_iter = data.find("doc");
 	if(doc_iter == data.end())
 	{
-		return false;
+		return "cant find key doc";
 	}
-	if(!doc_iter->is_string())
+	if (!str_or_object(doc_iter, _doc))
 	{
-		return false;
+		return "value for key doc is not valid object";
 	}
-	_doc = (*doc_iter).get<std::string>();
-
 	auto query_iter = data.find("query");
 	if (query_iter == data.end())
 	{
-		return false;
+		return "cant find key query";
 	}
-	if (!query_iter->is_string())
+	if (!str_or_object(query_iter, _query))
 	{
-		return false;
+		return "value for query is not valid object";
 	}
-	_query = (*query_iter).get<std::string>();
 
-	return true;
+	return "";
 }
+std::string modify_task::to_bson(const std::function<bool(std::string&)>& bson_func)
+{
+	auto base_error = base_task::to_bson(bson_func);
+
+	if (!base_error.empty())
+	{
+		return base_error;
+	}
+
+	if (!bson_func(_doc))
+	{
+		return "doc";
+	}
+	if (!bson_func(_query))
+	{
+		return "query";
+	}
+	return "";
+}
+
 std::shared_ptr<update_task> update_task::update_one(
 	const base_task& base,
 	const json::object_t& query,
@@ -652,6 +806,10 @@ const std::string& modify_task::query() const
 {
 	return _query;
 }
+const find_option& modify_task::option() const
+{
+	return _option;
+}
 
 std::shared_ptr<modify_task> modify_task::modify_one(
 	const base_task& base,
@@ -671,11 +829,11 @@ std::shared_ptr<modify_task> modify_task::modify_one(
 	result->_return_new = return_new;
 	if (!fields.empty())
 	{
-		result->_option.fields = json(fields).dump();
+		result->_option.fields = convert_bool_map_to_str(fields);
 	}
 	if (!sort.empty())
 	{
-		result->_option.sort = json(sort).dump();
+		result->_option.sort = convert_bool_map_to_str(sort);
 	}
 	return result;
 }
@@ -691,11 +849,11 @@ std::shared_ptr<modify_task> modify_task::delete_one(
 	result->_op_type = task_op::modify_delete;
 	if (!fields.empty())
 	{
-		result->_option.fields = json(fields).dump();
+		result->_option.fields = convert_bool_map_to_str(fields);
 	}
 	if (!sort.empty())
 	{
-		result->_option.sort = json(sort).dump();
+		result->_option.sort = convert_bool_map_to_str(sort);
 	}
 	return result;
 }
@@ -718,32 +876,50 @@ json delete_task::to_json() const
 	result["query"] = _query;
 	return result;
 }
-bool delete_task::from_json(const json& data)
+std::string delete_task::from_json(const json& data)
 {
+	if (!data.is_object())
+	{
+		return "data is not object";
+	}
 	auto query_iter = data.find("query");
 	if(query_iter == data.end())
 	{
-		return false;
+		return "cant find key query";
 	}
-	if(!query_iter->is_string())
+	if (!str_or_object(query_iter, _query))
 	{
-		return false;
+		return "value for key query is not valid object";
 	}
-	_query = (*query_iter).get<std::string>();
 	auto limit_one_iter = data.find("limit_one");
 	if(limit_one_iter == data.end())
 	{
-		return false;
+		return "cant find key limit_one";
 	}
 	if(!limit_one_iter->is_boolean())
 	{
-		return false;
+		return "value for limit_one is not bool";
 	}
 	_limit_one = (*limit_one_iter).get<bool>();
 
 	
-	return true;
+	return "";
 }
+std::string delete_task::to_bson(const std::function<bool(std::string&)>& bson_func)
+{
+	auto base_error = base_task::to_bson(bson_func);
+	if(!base_error.empty())
+	{
+		return base_error;
+	}
+	if (!bson_func(_query))
+	{
+		return "query";
+	}
+	return "";
+}
+
+
 delete_task::delete_task(const base_task& in_base,
 	const std::string& in_query,
 	bool in_limit_one)
@@ -792,16 +968,16 @@ json task_reply::to_json() const
 	return result;
 }
 
-bool task_reply::from_json(const json& data)
+std::string task_reply::from_json(const json& data)
 {
 	auto count_iter = data.find("count");
 	if(count_iter == data.end())
 	{
-		return false;
+		return "cant find key count";
 	}
 	if(count_iter->is_number_unsigned())
 	{
-		return false;
+		return "value for count is not unsigned";
 	}
 
 	
@@ -810,11 +986,11 @@ bool task_reply::from_json(const json& data)
 	auto cost_iter = data.find("cost");
 	if(cost_iter == data.end())
 	{
-		return false;
+		return "cant find key cost";
 	}
 	if(cost_iter->is_number_unsigned())
 	{
-		return false;
+		return "value for key cost is not unsigned";
 	}
 
 	
@@ -823,32 +999,32 @@ bool task_reply::from_json(const json& data)
 	auto error_iter = data.find("error");
 	if(error_iter == data.end())
 	{
-		return false;
+		return "cant find key error";
 	}
 	if(!error_iter->is_string())
 	{
-		return false;
+		return "value for error is not string";
 	}
 	error = (*error_iter).get<std::string>();
 
 	auto content_iter = data.find("content");
 	if(content_iter == data.end())
 	{
-		return false;
+		return "cant find key content";
 	}
 	if(!content_iter->is_array())
 	{
-		return false;
+		return "value for content is not array";
 	}
 	for (const auto& one_item : *content_iter)
 	{
 		if (!one_item.is_string())
 		{
-			return false;
+			return "item in content is not string";
 		}
 		content.push_back(one_item.get<std::string>());
 	}
-	return true;
+	return "";
 }
 
 

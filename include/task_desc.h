@@ -52,8 +52,11 @@ namespace spiritsaway::http_mongo::task_desc
 			const std::string& in_request_id,
 			const std::string& in_collection);
 		base_task::base_task();
-		virtual bool from_json(const json& data);
+		virtual std::string from_json(const json& data);
 		std::string debug_info() const;
+		virtual std::string to_bson(const std::function<bool(std::string&)>& bson_func);
+		static bool str_or_object(json::const_iterator& iter, std::string& dest);
+		static std::string convert_bool_map_to_str(const std::unordered_map<std::string, bool>& data);
 	};
 	class find_option
 	{
@@ -67,8 +70,8 @@ namespace spiritsaway::http_mongo::task_desc
 
 		read_prefer_mode read_prefer = read_prefer_mode::secondary;
 		json to_json() const;
-		bool from_json(const json& data);
-
+		std::string from_json(const json& data);
+		std::string to_bson(const std::function<bool(std::string&)>& bson_func);
 	};
 	class find_task: public base_task
 	{
@@ -83,8 +86,10 @@ namespace spiritsaway::http_mongo::task_desc
 		find_task(const base_task& base);
 		const find_option& option() const;
 		const std::string& query() const;
-		json to_json() const;
-		bool from_json(const json& data);
+		json to_json() const override;
+		std::string from_json(const json& data) override;
+		std::string to_bson(const std::function<bool(std::string&)>& bson_func) override;
+
 		static std::shared_ptr<find_task> find_one(
 			const base_task& base, 
 			const json::object_t& query,
@@ -119,8 +124,10 @@ namespace spiritsaway::http_mongo::task_desc
 		count_task(const base_task& base);
 		const find_option& option() const;
 		const std::string& query() const;
-		json to_json() const;
-		bool from_json(const json& data);
+		json to_json() const override;
+		std::string from_json(const json& data) override;
+		std::string to_bson(const std::function<bool(std::string&)>& bson_func) override;
+
 		static std::shared_ptr<count_task> count(
 			const base_task& base,
 			const json::object_t& query,
@@ -138,8 +145,9 @@ namespace spiritsaway::http_mongo::task_desc
 		std::string _query;
 
 	public:
-		json to_json() const;
-		bool from_json(const json& data);
+		json to_json() const override;
+		std::string from_json(const json& data) override;
+		std::string to_bson(const std::function<bool(std::string&)>& bson_func) override;
 
 		update_task(const base_task& in_base,
 			const std::string& in_doc,
@@ -175,8 +183,9 @@ namespace spiritsaway::http_mongo::task_desc
 
 
 	public:
-		json to_json() const;
-		bool from_json(const json& data);
+		json to_json() const override;
+		std::string from_json(const json& data) override;
+		std::string to_bson(const std::function<bool(std::string&)>& bson_func) override;
 
 		modify_task(const base_task& in_base,
 			const std::string& in_doc,
@@ -215,8 +224,10 @@ namespace spiritsaway::http_mongo::task_desc
 		std::string _query;
 		bool _limit_one = true;//false for delete many
 	public:
-		json to_json() const;
-		bool from_json(const json& data);
+		json to_json() const override;
+		std::string from_json(const json& data) override;
+		std::string to_bson(const std::function<bool(std::string&)>& bson_func) override;
+
 		delete_task(const base_task& in_base,
 			const std::string& in_query,
 			bool in_only_one);
@@ -240,7 +251,7 @@ namespace spiritsaway::http_mongo::task_desc
 		std::vector<std::string> content;
 		std::uint32_t cost;// cost for miliseconds
 		json to_json() const;
-		bool from_json(const json& data);
+		std::string from_json(const json& data);
 
 	};
 	using reply_callback_t = std::function<void(const task_desc::task_reply&)>;

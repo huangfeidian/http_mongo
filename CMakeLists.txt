@@ -60,9 +60,9 @@ file(GLOB_RECURSE COMMAND_SRC_FILES "${PROJECT_SOURCE_DIR}/src/command/*.cpp")
 file(GLOB_RECURSE SERVER_SRC_FILES "${PROJECT_SOURCE_DIR}/src/server/*.cpp")
 
 add_library(command ${COMMAND_SRC_FILES})
-
+target_link_libraries(command nlohmann_json::nlohmann_json)
 add_library(server ${SERVER_SRC_FILES})
-target_link_libraries(server PUBLIC http_utils nlohmann_json::nlohmann_json task_channel mongo::mongocxx_shared mongo::bsoncxx_shared spdlog::spdlog)
+target_link_libraries(server PUBLIC http_utils nlohmann_json::nlohmann_json task_channel mongo::mongocxx_shared mongo::bsoncxx_shared spdlog::spdlog command)
 
 add_executable(server_test ${PROJECT_SOURCE_DIR}/test/test_server.cpp)
 target_link_libraries(server_test server)

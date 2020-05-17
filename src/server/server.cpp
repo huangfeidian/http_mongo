@@ -1,6 +1,8 @@
 ﻿#include <server.h>
 #include <nlohmann/json.hpp>
 #include <spdlog/fmt/ostr.h>
+#include <bsoncxx/json.hpp>
+
 using namespace spiritsaway;
 
 
@@ -17,6 +19,21 @@ mongo_session::mongo_session(tcp::socket&& socket,
 {
 
 }
+bool mongo_session::from_json_to_bson_str(std::string& data)
+{
+	try
+	{
+		auto cur_bson = bsoncxx::from_json(data);
+		auto cur_view = cur_bson.view();
+		data = std::string(reinterpret_cast<const char*>(cur_view.data()), cur_view.length());
+		return true;
+	}
+	catch (std::exception& e)
+	{
+		return false;
+	}
+
+}
 std::string mongo_session::check_request()
 {
 	auto check_error = http_utils::server::session::check_request();
@@ -30,7 +47,7 @@ std::string mongo_session::check_request()
 	}
 	if (!json::accept(req_.body()))
 	{
-		logger->info("request is {}", req_);
+		//logger->info("request is {}", req_);
 		return "body must be json";
 	}
 	auto json_body = json::parse(req_.body());
@@ -40,9 +57,12 @@ std::string mongo_session::check_request()
 
 	}
 	task_desc::base_task cur_base;
-	if (!cur_base.from_json(json_body))
+	std::string json_convert_error;
+	std::string bson_convert_error;
+	json_convert_error = cur_base.from_json(json_body);
+	if (!json_convert_error.empty())
 	{
-		return "cant get base task from request";
+		return "cant get base task from request: " + json_convert_error;
 	}
 	switch (cur_base.op_type())
 	{
@@ -52,9 +72,15 @@ std::string mongo_session::check_request()
 	case task_desc::task_op::find_multi:
 	{
 		auto cur_find_task = std::make_shared<task_desc::find_task>(cur_base);
-		if (!cur_find_task->from_json(json_body))
+		json_convert_error = cur_find_task->from_json(json_body);
+		if (!json_convert_error.empty())
 		{
-			return "cant construct find_task from request";
+			return "cant construct find_task from request: " + json_convert_error;
+		}
+		bson_convert_error = cur_find_task->to_bson(&mongo_session::from_json_to_bson_str);
+		if (!bson_convert_error.empty())
+		{
+			return "cant constuct bson from find_task: " + bson_convert_error;
 		}
 		cur_task = cur_find_task;
 		return "";
@@ -63,9 +89,15 @@ std::string mongo_session::check_request()
 	case task_desc::task_op::update_multi:
 	{
 		auto cur_update_task = std::make_shared<task_desc::update_task>(cur_base);
-		if (!cur_update_task->from_json(json_body))
+		json_convert_error = cur_update_task->from_json(json_body);
+		if (!json_convert_error.empty())
 		{
-			return "cant construct update_task from request";
+			return "cant construct cur_update_task from request: " + json_convert_error;
+		}
+		bson_convert_error = cur_update_task->to_bson(&mongo_session::from_json_to_bson_str);
+		if (!bson_convert_error.empty())
+		{
+			return "cant constuct bson from cur_update_task: " + bson_convert_error;
 		}
 		cur_task = cur_update_task;
 		return "";
@@ -74,9 +106,15 @@ std::string mongo_session::check_request()
 	case task_desc::task_op::delete_multi:
 	{
 		auto cur_delete_task = std::make_shared<task_desc::delete_task>(cur_base);
-		if (!cur_delete_task->from_json(json_body))
+		json_convert_error = cur_delete_task->from_json(json_body);
+		if (!json_convert_error.empty())
 		{
-			return "cant construct delete_task from request";
+			return "cant construct cur_delete_task from request: " + json_convert_error;
+		}
+		bson_convert_error = cur_delete_task->to_bson(&mongo_session::from_json_to_bson_str);
+		if (!bson_convert_error.empty())
+		{
+			return "cant constuct bson from cur_delete_task: " + bson_convert_error;
 		}
 		cur_task = cur_delete_task;
 		return "";
@@ -84,9 +122,15 @@ std::string mongo_session::check_request()
 	case task_desc::task_op::count:
 	{
 		auto cur_count_task = std::make_shared<task_desc::count_task>(cur_base);
-		if (!cur_count_task->from_json(json_body))
+		json_convert_error = cur_count_task->from_json(json_body);
+		if (!json_convert_error.empty())
 		{
-			return "cant construct count_task from request";
+			return "cant construct cur_count_task from request: " + json_convert_error;
+		}
+		bson_convert_error = cur_count_task->to_bson(&mongo_session::from_json_to_bson_str);
+		if (!bson_convert_error.empty())
+		{
+			return "cant constuct bson from cur_count_task: " + bson_convert_error;
 		}
 		cur_task = cur_count_task;
 		return "";
@@ -95,9 +139,15 @@ std::string mongo_session::check_request()
 	case task_desc::task_op::modify_delete:
 	{
 		auto cur_modify_task = std::make_shared<task_desc::modify_task>(cur_base);
-		if (!cur_modify_task->from_json(json_body))
+		json_convert_error = cur_modify_task->from_json(json_body);
+		if (!json_convert_error.empty())
 		{
-			return "cant construct modify_task from request";
+			return "cant construct cur_modify_task from request: " + json_convert_error;
+		}
+		bson_convert_error = cur_modify_task->to_bson(&mongo_session::from_json_to_bson_str);
+		if (!bson_convert_error.empty())
+		{
+			return "cant constuct bson from cur_modify_task: " + bson_convert_error;
 		}
 		cur_task = cur_modify_task;
 		return "";
@@ -110,7 +160,7 @@ std::string mongo_session::check_request()
 }
 void mongo_session::route_request()
 {
-	logger->debug("mongo_session accept new request {} body {}", request_id, req_.body());
+	logger->debug("mongo_session accept new request {} header {}", request_id, cur_task->debug_info());
 
 	auto self = std::dynamic_pointer_cast<mongo_session>(shared_from_this());
 	auto cur_task_lambda = [=](const task_desc::task_reply& reply)
@@ -144,23 +194,12 @@ void mongo_session::finish_task(const task_desc::task_reply& reply)
 {
 	expire_timer.reset();
 	callback.reset();
-	json::array_t array_result;
-	json final_result;
-	if (!reply.error.empty())
-	{
-		final_result["error"] = reply.error;
-		logger->info("process {} with error {}", req_.body(), reply.error);
-	}
-	else
-	{
-		final_result["content"] = std::move(reply.content);
-	}
 	logger->debug("finish task {}", request_id);
 	http::response<http::string_body> res{ http::status::ok, req_.version() };
 	res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
 	res.set(http::field::content_type, "text/html");
 	res.keep_alive(req_.keep_alive());
-	res.body() = final_result.dump();
+	res.body() = reply.to_json().dump();
 	res.prepare_payload();
 	do_write(std::move(res));
 }

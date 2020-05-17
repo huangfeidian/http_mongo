@@ -32,6 +32,7 @@ namespace spiritsaway::http_mongo::server
 		std::shared_ptr<task_desc::base_task> cur_task;
 		std::shared_ptr<boost::asio::steady_timer> expire_timer;
 		void on_timeout(const boost::system::error_code& e);
+		static bool from_json_to_bson_str(std::string& data);
 
 	public:
 		mongo_session(tcp::socket&& socket,
