@@ -85,6 +85,23 @@ std::string mongo_session::check_request()
 		cur_task = cur_find_task;
 		return "";
 	}
+	case task_desc::task_op::insert_one:
+	case task_desc::task_op::insert_multi:
+	{
+		auto cur_insert_task = std::make_shared<task_desc::insert_task>(cur_base);
+		json_convert_error = cur_insert_task->from_json(json_body);
+		if (!json_convert_error.empty())
+		{
+			return "cant construct cur_update_task from request: " + json_convert_error;
+		}
+		bson_convert_error = cur_insert_task->to_bson(&mongo_session::from_json_to_bson_str);
+		if (!bson_convert_error.empty())
+		{
+			return "cant constuct bson from cur_update_task: " + bson_convert_error;
+		}
+		cur_task = cur_insert_task;
+		return "";
+	}
 	case task_desc::task_op::update_one:
 	case task_desc::task_op::update_multi:
 	{

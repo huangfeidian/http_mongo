@@ -25,10 +25,10 @@ std::shared_ptr<spdlog::logger> create_logger(const std::string& name)
 
 int main()
 {
-	std::string db_host = "192.168.1.160";
+	std::string db_host = "192.168.1.110";
 	std::string db_user = "test";
 	std::string db_passwd = "test";
-	std::string db_name = "test_db";
+	std::string db_name = "mesh_server";
 	std::uint16_t db_port = 27017;
 	std::uint16_t listen_port = 8090;
 	std::string address = "0.0.0.0";

@@ -34,6 +34,7 @@ namespace spiritsaway::http_mongo::server
 	protected:
 		void run_find_task(mongocxx::database& db);
 		void run_count_task(mongocxx::database& db);
+		void run_insert_task(mongocxx::database& db);
 		void run_update_task(mongocxx::database& db);
 		void run_modify_task(mongocxx::database& db);
 		void run_delete_task(mongocxx::database& db);

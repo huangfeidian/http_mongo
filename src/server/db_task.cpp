@@ -83,6 +83,12 @@ void db_task::run_impl(mongocxx::database& db)
 		run_count_task(db);
 		break;
 	}
+	case task_desc::task_op::insert_one:
+	case task_desc::task_op::insert_multi:
+	{
+		run_insert_task(db);
+		break;
+	}
 	case task_desc::task_op::update_one:
 	case task_desc::task_op::update_multi:
 	{
@@ -198,6 +204,71 @@ void db_task::run_delete_task(mongocxx::database& db)
 		const auto& real_result = cur_del_result.value();
 		_reply.count = real_result.deleted_count();
 	}
+}
+void db_task::run_insert_task(mongocxx::database& db)
+{
+	auto cur_insert_task = std::dynamic_pointer_cast<const task_desc::insert_task>(_task_desc);
+	if (!cur_insert_task)
+	{
+		logger->error("fail to convert task to insert_task detail is: {}", _task_desc->debug_info());
+		return;
+	}
+	mongocxx::options::insert opt = mongocxx::options::insert{};
+	
+	const auto& docs = cur_insert_task->docs();
+	if (task_desc()->op_type() == task_desc::task_op::insert_one)
+	{
+		auto doc_view = bsoncxx::document::view((const std::uint8_t*)docs[0].data(), docs[0].size());
+		bsoncxx::stdx::optional<mongocxx::result::insert_one> cur_insert_result;
+		cur_insert_result = db[cur_insert_task->collection()].insert_one(doc_view, opt);
+		const auto& real_result = cur_insert_result.value();
+
+		auto cur_inserted_id = real_result.inserted_id();
+		if (cur_inserted_id.type() == bsoncxx::type::k_string)
+		{
+			_reply.content.push_back(std::string(cur_inserted_id.get_string().value));
+			_reply.count = 1;
+		}
+		else if (cur_inserted_id.type() == bsoncxx::type::k_oid)
+		{
+			_reply.content.push_back(cur_inserted_id.get_oid().value.to_string());
+			_reply.count = 1;
+		}
+		else
+		{
+			_reply.count = 0;
+		}
+	}
+	else
+	{
+		std::vector< bsoncxx::document::view> doc_views;
+		for (auto& one_doc : docs)
+		{
+			auto one_doc_view = bsoncxx::document::view((const std::uint8_t*)one_doc.data(), one_doc.size());
+			doc_views.push_back(one_doc_view);
+		}
+		bsoncxx::stdx::optional<mongocxx::result::insert_many> cur_insert_result;
+		cur_insert_result = db[cur_insert_task->collection()].insert_many(doc_views, opt);
+		const auto& real_result = cur_insert_result.value();
+
+		_reply.count = real_result.inserted_count();
+		for (auto one_insert_id : real_result.inserted_ids())
+		{
+			if (one_insert_id.second.type() == bsoncxx::type::k_string)
+			{
+				_reply.content.push_back(std::string(one_insert_id.second.get_string().value));
+			}
+			else if (one_insert_id.second.type() == bsoncxx::type::k_oid)
+			{
+				_reply.content.push_back(one_insert_id.second.get_oid().value.to_string());
+			}
+			else
+			{
+				_reply.content.push_back({});
+			}
+		}
+	}
+	
 }
 
 void db_task::run_update_task(mongocxx::database& db)

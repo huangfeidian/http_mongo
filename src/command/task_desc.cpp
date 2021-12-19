@@ -125,16 +125,16 @@ std::string base_task::to_bson(const std::function<bool(std::string&)>& bson_fun
 	return "";
 }
 
-bool base_task::str_or_object(json::const_iterator& iter, std::string& dest)
+bool base_task::str_or_object(const json& iter, std::string& dest)
 {
-	if (iter->is_string())
+	if (iter.is_string())
 	{
-		dest = (*iter).get<std::string>();
+		dest = iter.get<std::string>();
 		return true;
 	}
-	if (iter->is_object())
+	if (iter.is_object())
 	{
-		dest = (*iter).dump();
+		dest = iter.dump();
 		return true;
 	}
 	return false;
@@ -219,7 +219,7 @@ std::string find_option::from_json(const json& data)
 	auto hint_iter = data.find("hint");
 	if(hint_iter != data.end())
 	{
-		if (!base_task::str_or_object(hint_iter, hint))
+		if (!base_task::str_or_object(*hint_iter, hint))
 		{
 			return "value for hint is not valid object";
 		}
@@ -227,7 +227,7 @@ std::string find_option::from_json(const json& data)
 	auto sort_iter = data.find("sort");
 	if(sort_iter != data.end())
 	{
-		if (!base_task::str_or_object(sort_iter, sort))
+		if (!base_task::str_or_object(*sort_iter, sort))
 		{
 			return "value for sort is not valid object";
 		}
@@ -236,7 +236,7 @@ std::string find_option::from_json(const json& data)
 	auto fields_iter = data.find("fields");
 	if(fields_iter != data.end())
 	{
-		if (!base_task::str_or_object(fields_iter, fields))
+		if (!base_task::str_or_object(*fields_iter, fields))
 		{
 			return "value for fields is not valid object";
 		}
@@ -331,7 +331,7 @@ std::string find_task::from_json(const json& data)
 	{
 		return "cant find key query";
 	}
-	if (!str_or_object(query_iter, _query))
+	if (!str_or_object(*query_iter, _query))
 	{
 		return "value for query is not object";
 	}
@@ -471,7 +471,7 @@ std::string count_task::from_json(const json& data)
 	{
 		return "cant find key query";
 	}
-	if (!str_or_object(query_iter, _query))
+	if (!str_or_object(*query_iter, _query))
 	{
 		return "value for query is not object";
 	}
@@ -525,6 +525,92 @@ std::shared_ptr<count_task> count_task::count(
 	return result;
 }
 
+json insert_task::to_json() const
+{
+	json result = base_task::to_json();
+	result["docs"] = m_docs;
+	return result;
+}
+
+std::string insert_task::from_json(const json& data)
+{
+	if (!data.is_object())
+	{
+		return "data is not object";
+	}
+	auto doc_iter = data.find("docs");
+	if (doc_iter == data.end())
+	{
+		return "cant find key docs";
+	}
+	if (!doc_iter->is_array())
+	{
+		return "doc value is not array";
+	}
+	for (const auto& one_item : *doc_iter)
+	{
+		std::string temp_str;
+		if(!str_or_object(one_item, temp_str))
+		{
+			return "item in docs is not string";
+		}
+		m_docs.push_back(temp_str);
+	}
+	return {};
+}
+
+std::string insert_task::to_bson(const std::function<bool(std::string&)>& bson_func)
+{
+	auto base_error = base_task::to_bson(bson_func);
+
+	if (!base_error.empty())
+	{
+		return base_error;
+	}
+
+	if (!bson_func(json(m_docs).dump()))
+	{
+		return "doc";
+	}
+	return {};
+}
+
+insert_task::insert_task(const base_task& in_base, const std::vector<std::string>& in_docs)
+	: base_task(in_base)
+	, m_docs(in_docs)
+{
+
+}
+std::shared_ptr<insert_task> insert_task::insert_one(const base_task& base,
+	const json::object_t& doc)
+{
+	std::vector<std::string> doc_vec;
+	doc_vec.push_back(json(doc).dump());
+	auto cur_result = std::make_shared<insert_task>(base, doc_vec);
+	cur_result->_op_type = task_op::insert_one;
+	return cur_result;
+}
+
+std::shared_ptr<insert_task> insert_task::insert_multi(const base_task& base,
+	const std::vector<json::object_t>& doc)
+{
+	std::vector<std::string> doc_vec;
+	for (auto one_doc: doc)
+	{
+		doc_vec.push_back(json(one_doc).dump());
+
+	}
+	auto cur_result = std::make_shared<insert_task>(base, doc_vec);
+	cur_result->_op_type = task_op::insert_multi;
+	return cur_result;
+}
+
+insert_task::insert_task(const base_task& in_base)
+	: base_task(in_base)
+{
+
+}
+
 json update_task::to_json() const
 {
 	json result = base_task::to_json();
@@ -567,7 +653,7 @@ std::string update_task::from_json(const json& data)
 	{
 		return "cant find key doc";
 	}
-	if (!str_or_object(doc_iter, _doc))
+	if (!str_or_object(*doc_iter, _doc))
 	{
 		return "value for doc is not valid object";
 	}
@@ -577,7 +663,7 @@ std::string update_task::from_json(const json& data)
 	{
 		return "cant find key query";
 	}
-	if (!str_or_object(query_iter, _query))
+	if (!str_or_object(*query_iter, _query))
 	{
 		return "value for key query is not valid object";
 	}
@@ -696,7 +782,7 @@ std::string modify_task::from_json(const json& data)
 	{
 		return "cant find key doc";
 	}
-	if (!str_or_object(doc_iter, _doc))
+	if (!str_or_object(*doc_iter, _doc))
 	{
 		return "value for key doc is not valid object";
 	}
@@ -705,7 +791,7 @@ std::string modify_task::from_json(const json& data)
 	{
 		return "cant find key query";
 	}
-	if (!str_or_object(query_iter, _query))
+	if (!str_or_object(*query_iter, _query))
 	{
 		return "value for query is not valid object";
 	}
@@ -890,7 +976,7 @@ std::string delete_task::from_json(const json& data)
 	{
 		return "cant find key query";
 	}
-	if (!str_or_object(query_iter, _query))
+	if (!str_or_object(*query_iter, _query))
 	{
 		return "value for key query is not valid object";
 	}

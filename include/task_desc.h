@@ -15,6 +15,8 @@ namespace spiritsaway::http_mongo::task_desc
 		find_one,
 		find_multi,
 		count,
+		insert_one,
+		insert_multi,
 		update_one,
 		update_multi,
 		delete_one,
@@ -55,7 +57,7 @@ namespace spiritsaway::http_mongo::task_desc
 		virtual std::string from_json(const json& data);
 		std::string debug_info() const;
 		virtual std::string to_bson(const std::function<bool(std::string&)>& bson_func);
-		static bool str_or_object(json::const_iterator& iter, std::string& dest);
+		static bool str_or_object(const json& iter, std::string& dest);
 		static std::string convert_bool_map_to_str(const std::unordered_map<std::string, bool>& data);
 	};
 	class find_option
@@ -134,6 +136,26 @@ namespace spiritsaway::http_mongo::task_desc
 			read_prefer_mode read_prefer = read_prefer_mode::secondary,
 			std::unordered_map<std::string, bool>  hint = {}
 		);
+	};
+
+	class insert_task : public base_task
+	{
+	protected:
+		std::vector<std::string> m_docs;
+	public:
+		insert_task(const base_task& in_base);
+		insert_task(const base_task& in_base, const std::vector<std::string>& in_docs);
+		static std::shared_ptr<insert_task> insert_one(const base_task& base,
+			const json::object_t& doc);
+		static std::shared_ptr<insert_task> insert_multi(const base_task& base,
+			const std::vector<json::object_t>& doc);
+		json to_json() const override;
+		const std::vector<std::string>& docs() const
+		{
+			return m_docs;
+		}
+		std::string from_json(const json& data) override;
+		std::string to_bson(const std::function<bool(std::string&)>& bson_func) override;
 	};
 
 	class update_task: public base_task
