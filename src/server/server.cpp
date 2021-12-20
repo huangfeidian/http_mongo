@@ -77,11 +77,7 @@ std::string mongo_session::check_request()
 		{
 			return "cant construct find_task from request: " + json_convert_error;
 		}
-		bson_convert_error = cur_find_task->to_bson(&mongo_session::from_json_to_bson_str);
-		if (!bson_convert_error.empty())
-		{
-			return "cant constuct bson from find_task: " + bson_convert_error;
-		}
+
 		cur_task = cur_find_task;
 		return "";
 	}
@@ -94,11 +90,7 @@ std::string mongo_session::check_request()
 		{
 			return "cant construct cur_update_task from request: " + json_convert_error;
 		}
-		bson_convert_error = cur_insert_task->to_bson(&mongo_session::from_json_to_bson_str);
-		if (!bson_convert_error.empty())
-		{
-			return "cant constuct bson from cur_update_task: " + bson_convert_error;
-		}
+
 		cur_task = cur_insert_task;
 		return "";
 	}
@@ -111,11 +103,7 @@ std::string mongo_session::check_request()
 		{
 			return "cant construct cur_update_task from request: " + json_convert_error;
 		}
-		bson_convert_error = cur_update_task->to_bson(&mongo_session::from_json_to_bson_str);
-		if (!bson_convert_error.empty())
-		{
-			return "cant constuct bson from cur_update_task: " + bson_convert_error;
-		}
+
 		cur_task = cur_update_task;
 		return "";
 	}
@@ -128,11 +116,6 @@ std::string mongo_session::check_request()
 		{
 			return "cant construct cur_delete_task from request: " + json_convert_error;
 		}
-		bson_convert_error = cur_delete_task->to_bson(&mongo_session::from_json_to_bson_str);
-		if (!bson_convert_error.empty())
-		{
-			return "cant constuct bson from cur_delete_task: " + bson_convert_error;
-		}
 		cur_task = cur_delete_task;
 		return "";
 	}
@@ -144,11 +127,7 @@ std::string mongo_session::check_request()
 		{
 			return "cant construct cur_count_task from request: " + json_convert_error;
 		}
-		bson_convert_error = cur_count_task->to_bson(&mongo_session::from_json_to_bson_str);
-		if (!bson_convert_error.empty())
-		{
-			return "cant constuct bson from cur_count_task: " + bson_convert_error;
-		}
+
 		cur_task = cur_count_task;
 		return "";
 	}
@@ -161,11 +140,7 @@ std::string mongo_session::check_request()
 		{
 			return "cant construct cur_modify_task from request: " + json_convert_error;
 		}
-		bson_convert_error = cur_modify_task->to_bson(&mongo_session::from_json_to_bson_str);
-		if (!bson_convert_error.empty())
-		{
-			return "cant constuct bson from cur_modify_task: " + bson_convert_error;
-		}
+
 		cur_task = cur_modify_task;
 		return "";
 	}
