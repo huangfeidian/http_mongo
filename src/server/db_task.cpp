@@ -134,21 +134,21 @@ void db_task::run_find_task(mongocxx::database& db)
 	if (!task_find_opt.sort.is_null())
 	{
 		const auto& sort_str = task_find_opt.sort.dump();
-		opt.sort(bsoncxx::from_json(std::string_view(sort_str.data(), sort_str.size())));
+		opt.sort(bsoncxx::from_json(bsoncxx::stdx::string_view(sort_str.data(), sort_str.size())));
 	}
 	if (!task_find_opt.fields.is_null())
 	{
 		const auto& fields_str = task_find_opt.fields.dump();
-		opt.projection(bsoncxx::from_json(std::string_view(fields_str.data(), fields_str.size())));
+		opt.projection(bsoncxx::from_json(bsoncxx::stdx::string_view(fields_str.data(), fields_str.size())));
 	}
 	if (!task_find_opt.hint.is_null())
 	{
 		const auto& hint_str = task_find_opt.hint.dump();
-		opt.hint(mongocxx::hint(bsoncxx::from_json(std::string_view(hint_str.data(), hint_str.size()))));
+		opt.hint(mongocxx::hint(bsoncxx::from_json(bsoncxx::stdx::string_view(hint_str.data(), hint_str.size()))));
 	}
 	const auto& query_str = cur_find_task->query().dump();
 
-	mongocxx::cursor cursor = db[cur_find_task->collection()].find(bsoncxx::from_json(std::string_view(query_str.data(), query_str.size())), opt);
+	mongocxx::cursor cursor = db[cur_find_task->collection()].find(bsoncxx::from_json(bsoncxx::stdx::string_view(query_str.data(), query_str.size())), opt);
 	for (auto& one_doc: cursor)
 	{
 		_reply.content.push_back(bsoncxx::to_json(one_doc));
@@ -170,11 +170,11 @@ void db_task::run_count_task(mongocxx::database& db)
 	if (!task_count_opt.hint.is_null())
 	{
 		const auto& hint_str = task_count_opt.hint.dump();
-		opt.hint(mongocxx::hint(bsoncxx::from_json(std::string_view(hint_str.data(), hint_str.size()))));
+		opt.hint(mongocxx::hint(bsoncxx::from_json(bsoncxx::stdx::string_view(hint_str.data(), hint_str.size()))));
 	}
 	const auto& query_str = cur_count_task->query().dump();
 
-	_reply.count = db[cur_count_task->collection()].count_documents(bsoncxx::from_json(std::string_view(query_str.data(), query_str.size())), opt);
+	_reply.count = db[cur_count_task->collection()].count_documents(bsoncxx::from_json(bsoncxx::stdx::string_view(query_str.data(), query_str.size())), opt);
 }
 
 void db_task::run_delete_task(mongocxx::database& db)
@@ -193,11 +193,11 @@ void db_task::run_delete_task(mongocxx::database& db)
 	bsoncxx::stdx::optional<mongocxx::result::delete_result> cur_del_result;
 	if (cur_del_task->is_limit_one())
 	{
-		cur_del_result = db[cur_del_task->collection()].delete_one(bsoncxx::from_json(std::string_view(query_str.data(), query_str.size())));
+		cur_del_result = db[cur_del_task->collection()].delete_one(bsoncxx::from_json(bsoncxx::stdx::string_view(query_str.data(), query_str.size())));
 	}
 	else
 	{
-		cur_del_result = db[cur_del_task->collection()].delete_many(bsoncxx::from_json(std::string_view(query_str.data(), query_str.size())));
+		cur_del_result = db[cur_del_task->collection()].delete_many(bsoncxx::from_json(bsoncxx::stdx::string_view(query_str.data(), query_str.size())));
 	}
 	if (cur_del_result)
 	{
@@ -220,7 +220,7 @@ void db_task::run_insert_task(mongocxx::database& db)
 	{
 		auto doc_str = docs[0].dump();
 		bsoncxx::stdx::optional<mongocxx::result::insert_one> cur_insert_result;
-		cur_insert_result = db[cur_insert_task->collection()].insert_one(bsoncxx::from_json(std::string_view(doc_str.data(), doc_str.size())), opt);
+		cur_insert_result = db[cur_insert_task->collection()].insert_one(bsoncxx::from_json(bsoncxx::stdx::string_view(doc_str.data(), doc_str.size())), opt);
 		const auto& real_result = cur_insert_result.value();
 
 		auto cur_inserted_id = real_result.inserted_id();
@@ -248,7 +248,7 @@ void db_task::run_insert_task(mongocxx::database& db)
 		for (auto& one_doc : docs)
 		{
 			auto one_doc_str = one_doc.dump();
-			doc_vals.push_back(bsoncxx::from_json(std::string_view(one_doc_str.data(), one_doc_str.size())));
+			doc_vals.push_back(bsoncxx::from_json(bsoncxx::stdx::string_view(one_doc_str.data(), one_doc_str.size())));
 		}
 		for (const auto& one_doc : doc_vals)
 		{
@@ -297,11 +297,11 @@ void db_task::run_update_task(mongocxx::database& db)
 
 	if(cur_update_task->is_multi())
 	{
-		cur_update_result = db[cur_update_task->collection()].update_many(bsoncxx::from_json(std::string_view(query_str.data(), query_str.size())), bsoncxx::from_json(std::string_view(doc_str.data(), doc_str.size())), opt);
+		cur_update_result = db[cur_update_task->collection()].update_many(bsoncxx::from_json(bsoncxx::stdx::string_view(query_str.data(), query_str.size())), bsoncxx::from_json(bsoncxx::stdx::string_view(doc_str.data(), doc_str.size())), opt);
 	}
 	else
 	{
-		cur_update_result = db[cur_update_task->collection()].update_one(bsoncxx::from_json(std::string_view(query_str.data(), query_str.size())), bsoncxx::from_json(std::string_view(doc_str.data(), doc_str.size())), opt);
+		cur_update_result = db[cur_update_task->collection()].update_one(bsoncxx::from_json(bsoncxx::stdx::string_view(query_str.data(), query_str.size())), bsoncxx::from_json(bsoncxx::stdx::string_view(doc_str.data(), doc_str.size())), opt);
 		
 	}
 	if (cur_update_result)
@@ -331,7 +331,7 @@ void db_task::run_modify_task(mongocxx::database& db)
 	}
 	const auto& task_modify_opt = cur_modify_task->option();
 	const auto& query_str = cur_modify_task->query().dump();
-	auto query_doc = bsoncxx::from_json(std::string_view(query_str.data(), query_str.size()));
+	auto query_doc = bsoncxx::from_json(bsoncxx::stdx::string_view(query_str.data(), query_str.size()));
 
 	auto query_view = bsoncxx::document::view(query_doc);
 
@@ -341,12 +341,12 @@ void db_task::run_modify_task(mongocxx::database& db)
 		if (!task_modify_opt.fields.is_null())
 		{
 			const auto& fields_str = task_modify_opt.fields.dump();
-			opt.projection(bsoncxx::from_json(std::string_view(fields_str.data(), fields_str.size())));
+			opt.projection(bsoncxx::from_json(bsoncxx::stdx::string_view(fields_str.data(), fields_str.size())));
 		}
 		if (!task_modify_opt.sort.empty())
 		{
 			const auto& sort_str = task_modify_opt.sort.dump();
-			opt.sort(bsoncxx::from_json(std::string_view(sort_str.data(), sort_str.size())));
+			opt.sort(bsoncxx::from_json(bsoncxx::stdx::string_view(sort_str.data(), sort_str.size())));
 		}
 		auto cur_result = db[cur_modify_task->collection()].find_one_and_delete(query_view, opt);
 		if (cur_result)
@@ -364,12 +364,12 @@ void db_task::run_modify_task(mongocxx::database& db)
 		if (!task_modify_opt.fields.is_null())
 		{
 			const auto& fields_str = task_modify_opt.fields.dump();
-			opt.projection(bsoncxx::from_json(std::string_view(fields_str.data(), fields_str.size())));
+			opt.projection(bsoncxx::from_json(bsoncxx::stdx::string_view(fields_str.data(), fields_str.size())));
 		}
 		if (!task_modify_opt.sort.empty())
 		{
 			const auto& sort_str = task_modify_opt.sort.dump();
-			opt.sort(bsoncxx::from_json(std::string_view(sort_str.data(), sort_str.size())));
+			opt.sort(bsoncxx::from_json(bsoncxx::stdx::string_view(sort_str.data(), sort_str.size())));
 		}
 		opt.upsert(cur_modify_task->is_upset());
 
@@ -378,7 +378,7 @@ void db_task::run_modify_task(mongocxx::database& db)
 		const auto& doc_str = cur_modify_task->doc().dump();
 
 
-		auto cur_result = db[cur_modify_task->collection()].find_one_and_update(query_view, bsoncxx::from_json(std::string_view(doc_str.data(), doc_str.size())), opt);
+		auto cur_result = db[cur_modify_task->collection()].find_one_and_update(query_view, bsoncxx::from_json(bsoncxx::stdx::string_view(doc_str.data(), doc_str.size())), opt);
 		if (cur_result)
 		{
 			_reply.content.push_back(bsoncxx::to_json(cur_result.value()));

@@ -1,5 +1,5 @@
 ﻿#include <worker.h>
-#include <fmt/format.h>
+#include <spdlog/fmt/fmt.h>
 #include <bsoncxx/builder/stream/document.hpp>
 
 using namespace spiritsaway;

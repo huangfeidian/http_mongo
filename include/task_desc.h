@@ -53,7 +53,7 @@ namespace spiritsaway::http_mongo::task_desc
 			const std::string& in_channel,
 			const std::string& in_request_id,
 			const std::string& in_collection);
-		base_task::base_task();
+		base_task();
 		virtual std::string from_json(const json& data);
 		std::string debug_info() const;
 
