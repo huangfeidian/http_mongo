@@ -27,7 +27,7 @@ const std::string& base_task::channel() const
 {
 	return m_channel;
 }
-const std::string& base_task::request_id() const
+std::uint64_t base_task::request_id() const
 {
 	return m_request_id;
 }
@@ -37,7 +37,7 @@ const std::string& base_task::collection() const
 }
 base_task::base_task(task_op in_op_type,
 	const std::string& in_channel,
-	const std::string& in_request_id,
+	const std::uint64_t in_request_id,
 	const std::string& in_collection)
 	: m_collection(in_collection)
 	, m_channel(in_channel)
@@ -86,11 +86,11 @@ std::string base_task::from_json(const json& data)
 	{
 		return "cant find key request_id";
 	}
-	if(!request_iter->is_string())
+	if(!request_iter->is_number_unsigned())
 	{
 		return "value for request_id is not str";
 	}
-	m_request_id = (*request_iter).get<std::string>();
+	m_request_id = (*request_iter).get<std::uint64_t>();
 	auto op_type_iter = data.find("op_type");
 	if(op_type_iter == data.end())
 	{
