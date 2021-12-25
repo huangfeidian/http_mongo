@@ -37,7 +37,7 @@ namespace spiritsaway::http_mongo::task_desc
 	protected:
 		std::string m_collection = "";
 		std::string m_channel = "";
-		std::uint64_t m_request_id = 0;
+		std::string m_request_id = "";
 		task_op m_op_type = task_op::invalid;
 		json::object_t m_extra;
 	public:
@@ -47,11 +47,11 @@ namespace spiritsaway::http_mongo::task_desc
 		std::string_view op_name() const;
 		task_op op_type() const;
 		const std::string& channel() const;
-		std::uint64_t request_id() const;
+		const std::string& request_id() const;
 		const std::string& collection() const;
 		base_task(task_op in_op_type,
 			const std::string& in_channel,
-			const std::uint64_t in_request_id,
+			const std::string& in_request_id,
 			const std::string& in_collection);
 		base_task();
 		virtual std::string from_json(const json& data);

@@ -31,7 +31,7 @@ std::shared_ptr<spdlog::logger> create_logger(const std::string& name)
 std::vector<std::string> create_cmds()
 {
 	std::vector<std::string> result;
-	base_task _base(task_op::invalid, "test", 111, "test");
+	base_task _base(task_op::invalid, "test", "111", "test");
 	json::object_t query;
 	query["hehe"] = 1;
 
