@@ -10,50 +10,19 @@
 
 namespace spiritsaway::http_mongo::server
 {
-	using namespace spiritsaway;
-	using json = nlohmann::json;
-	namespace beast = boost::beast;         // from <boost/beast.hpp>
-	namespace http = beast::http;           // from <boost/beast/http.hpp>
-	namespace net = boost::asio;            // from <boost/asio.hpp>
-	using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
-	using logger_t = std::shared_ptr<spdlog::logger>;
 
 
-	class mongo_session : public http_utils::server::session
+	class mongo_server : public http_utils::http_server
 	{
-		concurrency::task_channels<db_task>& _task_dest;
-		std::string request_id;
-		std::vector<std::string> mongo_cmds;
-		std::string channel;
-		std::string check_request() override;
-		void route_request() override;
-		void finish_task(const task_desc::task_reply& reply);
-		std::shared_ptr<db_task::callback_t> callback;
-		std::shared_ptr<task_desc::base_task> cur_task;
-		std::shared_ptr<boost::asio::steady_timer> expire_timer;
-		void on_timeout(const boost::system::error_code& e);
-		static bool from_json_to_bson_str(std::string& data);
-
 	public:
-		mongo_session(tcp::socket&& socket,
-			logger_t in_logger,
-			std::uint32_t in_expire_time,
-			concurrency::task_channels<db_task>& in_task_dest);
-
-	};
-
-	class mongo_listener : public http_utils::server::listener
-	{
+		mongo_server(asio::io_context& ioc
+			, std::shared_ptr<spdlog::logger> in_logger, const std::string& address, const std::string& port, spiritsaway::concurrency::task_channels<db_task, true>& task_dest);
+		bool from_json_to_bson_str(std::string& data) const;
 	protected:
-		concurrency::task_channels<db_task>& _task_dest;
-
-	public:
-		mongo_listener(net::io_context& ioc,
-			tcp::endpoint endpoint,
-			logger_t in_logger,
-			std::uint32_t expire_time,
-			concurrency::task_channels<db_task>& task_dest);
-
-		std::shared_ptr<http_utils::server::session> make_session(tcp::socket&& socket) override;
+		void handle_request(const http_utils::request& req, http_utils::reply_handler rep_cb) override;
+		std::string check_request(const http_utils::request& cur_req, std::shared_ptr<task_desc::base_task> cur_task) const;
+		void finish_task(const http_utils::request& cur_req, const task_desc::task_reply& reply, http_utils::reply_handler rep_cb);
+	protected:
+		concurrency::task_channels<db_task, true>& m_task_dest;
 	};
 }

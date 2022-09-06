@@ -34,19 +34,7 @@ link_directories(${OPENSSL_LIBRARY_DIR})
 
 find_package(Threads REQUIRED)
 
-find_package (
-  Boost 1.71 REQUIRED COMPONENTS
-	system
-	thread
-	
-	)
-include_directories (${Boost_INCLUDE_DIRS})
-link_directories (${Boost_LIBRARY_DIRS})
-add_definitions (-DBOOST_ASIO_NO_DEPRECATED=1)
-add_definitions (-DBOOST_ASIO_DISABLE_BOOST_ARRAY=1)
-add_definitions (-DBOOST_ASIO_DISABLE_BOOST_BIND=1)
-add_definitions (-DBOOST_ASIO_DISABLE_BOOST_DATE_TIME=1)
-add_definitions (-DBOOST_ASIO_DISABLE_BOOST_REGEX=1)
+
 
 find_package(mongocxx REQUIRED)
 
@@ -62,13 +50,12 @@ file(GLOB_RECURSE SERVER_SRC_FILES "${PROJECT_SOURCE_DIR}/src/server/*.cpp")
 add_library(command ${COMMAND_SRC_FILES})
 target_link_libraries(command nlohmann_json::nlohmann_json)
 add_library(server ${SERVER_SRC_FILES})
-target_link_libraries(server PUBLIC http_utils nlohmann_json::nlohmann_json task_channel mongo::mongocxx_shared mongo::bsoncxx_shared spdlog::spdlog command)
+target_link_libraries(server PUBLIC http_utils::http_server nlohmann_json::nlohmann_json task_channel mongo::mongocxx_shared mongo::bsoncxx_shared spdlog::spdlog command)
 
 add_executable(server_test ${PROJECT_SOURCE_DIR}/test/test_server.cpp)
 target_link_libraries(server_test server)
 
-add_executable(client_test ${PROJECT_SOURCE_DIR}/test/test_client.cpp)
-target_link_libraries(client_test http_utils nlohmann_json::nlohmann_json command)
+
 
 foreach(p LIB BIN INCLUDE)
 	set(var CMAKE_INSTALL_${p}DIR)

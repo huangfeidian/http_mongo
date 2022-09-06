@@ -41,14 +41,12 @@ int main()
 	_db_config.passwd = db_passwd;
 	_db_config.user = db_user;
 	_db_config.port = db_port;
-	auto listen_address = net::ip::make_address(address);
 	mongocxx::instance mongo_instance;
-	net::io_context ioc(static_cast<int>(io_worker_num));
-	concurrency::task_channels<db_task> task_queue;
+	asio::io_context ioc{ static_cast<int>(io_worker_num) };
+	spiritsaway::concurrency::task_channels<http_mongo::server::db_task, true> task_queue;
 	auto cur_logger = create_logger("mongo_http_server");
-	auto cur_listener = std::make_shared<mongo_listener>(ioc,
-		tcp::endpoint(listen_address, listen_port), cur_logger, expire_time, task_queue);
-	cur_listener->run();
+	auto cur_server = http_mongo::server::mongo_server(ioc, cur_logger, address, std::to_string(listen_port), task_queue);
+	cur_server.run();
 	std::vector<std::thread> io_worker_threads;
 	std::vector<std::thread> task_worker_threads;
 	std::vector<std::shared_ptr<worker>> task_workers;

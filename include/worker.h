@@ -27,20 +27,20 @@ namespace spiritsaway::http_mongo::server
 
 	class worker
 	{
-		const mongo_config _config;
+		const mongo_config m_config;
 		logger_t logger;
-		concurrency::task_channels<db_task>& _task_source;
+		concurrency::task_channels<db_task, true>& m_task_source;
 		db_task::channel_type pre_channel;
 		std::uint32_t worker_id = 0;
 
-		std::shared_ptr<mongocxx::client> _client;
-		std::shared_ptr<mongocxx::database> _db;
+		std::shared_ptr<mongocxx::client> m_client;
+		std::shared_ptr<mongocxx::database> m_db;
 
 		std::uint32_t retry_base_milliseconds = 100;
 		std::uint32_t retry_max_fold = 16;
 		std::uint32_t cur_retry_time = 1;
 	public:
-		worker(const mongo_config& config, concurrency::task_channels<db_task>& task_source, logger_t in_logger);
+		worker(const mongo_config& config, concurrency::task_channels<db_task, true>& task_source, logger_t in_logger);
 		worker(const worker& other) = delete;
 		void run();
 		void set_executor_id(std::uint32_t executor_id);
