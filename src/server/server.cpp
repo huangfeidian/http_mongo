@@ -166,7 +166,7 @@ void mongo_server::finish_task(const http_utils::request& cur_req, const task_de
 	http_utils::reply cur_rep;
 	cur_rep.status_code = std::uint32_t(http_utils::reply::status_type::ok);
 	cur_rep.content = reply.to_json().dump();
-	cur_rep.add_header("ContentType", "text/json" );
+	cur_rep.add_header("Content-Type", "text/json" );
 
 	rep_cb(cur_rep);
 }
