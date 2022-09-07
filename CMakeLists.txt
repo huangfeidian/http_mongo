@@ -34,7 +34,7 @@ link_directories(${OPENSSL_LIBRARY_DIR})
 
 find_package(Threads REQUIRED)
 
-
+find_package(Boost REQUIRED)
 
 find_package(mongocxx REQUIRED)
 
