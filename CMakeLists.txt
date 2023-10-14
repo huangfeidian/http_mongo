@@ -47,13 +47,13 @@ include_directories(${MONGO_INCLUDE_DIR})
 file(GLOB_RECURSE COMMAND_SRC_FILES "${PROJECT_SOURCE_DIR}/src/command/*.cpp")
 file(GLOB_RECURSE SERVER_SRC_FILES "${PROJECT_SOURCE_DIR}/src/server/*.cpp")
 
-add_library(command ${COMMAND_SRC_FILES})
-target_link_libraries(command nlohmann_json::nlohmann_json)
-add_library(server ${SERVER_SRC_FILES})
-target_link_libraries(server PUBLIC http_utils::http_server nlohmann_json::nlohmann_json task_channel mongo::mongocxx_shared mongo::bsoncxx_shared spdlog::spdlog command)
+add_library(http_mongo_command ${COMMAND_SRC_FILES})
+target_link_libraries(http_mongo_command nlohmann_json::nlohmann_json)
+add_library(http_mongo_server ${SERVER_SRC_FILES})
+target_link_libraries(http_mongo_server PUBLIC http_utils::http_server nlohmann_json::nlohmann_json task_channel mongo::mongocxx_shared mongo::bsoncxx_shared spdlog::spdlog http_mongo_command)
 
 add_executable(server_test ${PROJECT_SOURCE_DIR}/test/test_server.cpp)
-target_link_libraries(server_test server)
+target_link_libraries(server_test http_mongo_server)
 
 
 
@@ -65,7 +65,7 @@ foreach(p LIB BIN INCLUDE)
 	endif()
 endforeach()
 
-export(TARGETS command server 
+export(TARGETS http_mongo_command http_mongo_server 
      FILE ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}Targets.cmake)
 
 file(WRITE
@@ -76,7 +76,7 @@ install(FILES
         ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}Config.cmake
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME})
 
-install(TARGETS command server EXPORT ${PROJECT_NAME}Targets
+install(TARGETS http_mongo_command http_mongo_server EXPORT ${PROJECT_NAME}Targets
    ARCHIVE  DESTINATION lib
    LIBRARY DESTINATION lib
    RUNTIME DESTINATION bin
