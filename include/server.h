@@ -11,7 +11,7 @@
 namespace spiritsaway::http_mongo::server
 {
 
-
+	namespace asio = boost::asio;
 	class mongo_server : public http_utils::http_server
 	{
 	public:
