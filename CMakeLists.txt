@@ -41,7 +41,7 @@ find_package(mongocxx REQUIRED)
 include_directories(${MONGO_INCLUDE_DIR})
 
 
-
+find_package(Boost 1.71.0 REQUIRED COMPONENTS  system date_time)
 
 
 file(GLOB_RECURSE COMMAND_SRC_FILES "${PROJECT_SOURCE_DIR}/src/command/*.cpp")

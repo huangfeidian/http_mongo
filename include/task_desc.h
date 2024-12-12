@@ -3,7 +3,7 @@
 #include <unordered_map>
 
 #include <nlohmann/json.hpp>
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <functional>
 
 namespace spiritsaway::http_mongo::task_desc
