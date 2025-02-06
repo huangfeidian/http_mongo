@@ -66,15 +66,15 @@ foreach(p LIB BIN INCLUDE)
 endforeach()
 
 export(TARGETS http_mongo_command http_mongo_server 
-     FILE ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}Targets.cmake)
+     FILE ${CMAKE_BINARY_DIR}/${PROJECT_NAME}Targets.cmake)
 
 file(WRITE
-    ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}Config.cmake
-    "include(\${CMAKE_CURRENT_LIST_DIR}/${CMAKE_PROJECT_NAME}Targets.cmake)\n")
+    ${CMAKE_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    "include(\${CMAKE_CURRENT_LIST_DIR}/${PROJECT_NAME}Targets.cmake)\n")
 
 install(FILES
-        ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}Config.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME})
+        ${CMAKE_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 
 install(TARGETS http_mongo_command http_mongo_server EXPORT ${PROJECT_NAME}Targets
    ARCHIVE  DESTINATION lib
@@ -84,6 +84,6 @@ install(TARGETS http_mongo_command http_mongo_server EXPORT ${PROJECT_NAME}Targe
 
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include/${PROJECT_NAME})
 
-install(EXPORT ${CMAKE_PROJECT_NAME}Targets
-        NAMESPACE ${CMAKE_PROJECT_NAME}::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME})
+install(EXPORT ${PROJECT_NAME}Targets
+        NAMESPACE ${PROJECT_NAME}::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
